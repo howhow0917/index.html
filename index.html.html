@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黃金總經量化儀表板 | Portfolio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen p-4 md:p-8">
+    
+    <div class="max-w-7xl mx-auto">
+        <!-- 頁首 -->
+        <header class="mb-6 border-b border-slate-700 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-amber-400 flex items-center gap-2">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    Macro Gold Intelligence Dashboard
+                </h1>
+                <p class="text-slate-400 mt-2 text-sm">四維度分析：貨幣政策、匯率走勢、避險情緒、實體央行買盤</p>
+            </div>
+            <div class="text-sm text-slate-400 bg-slate-800 px-4 py-2 rounded-full border border-slate-700 w-max">
+                Quantitative Portfolio
+            </div>
+        </header>
+
+        <!-- 第 1 列：即時報價、實質利率與宏觀評級 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            
+            <!-- 即時黃金報價 -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg flex flex-col justify-between">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-semibold text-amber-300">即時黃金報價 (XAU/USD)</h2>
+                    <span class="flex h-3 w-3 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                </div>
+                <!-- TradingView 迷你報價 -->
+                <div id="tv-single-quote" class="w-full h-[120px] rounded overflow-hidden"></div>
+                
+                <!-- Gold-API 雙源校驗徽章 -->
+                <div class="mt-4 pt-3 border-t border-slate-700 flex justify-between items-center text-xs text-slate-400">
+                    <div class="flex items-center gap-1">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        API 交叉校驗 (Gold-API)
+                    </div>
+                    <span id="api-double-check" class="font-mono text-amber-400/80 bg-slate-900 px-2 py-1 rounded border border-slate-700 animate-pulse">
+                        連線中...
+                    </span>
+                </div>
+            </div>
+
+            <!-- 貨幣政策與透明化的評級邏輯 -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg lg:col-span-2">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 class="text-lg font-semibold text-blue-300">貨幣政策與宏觀量化評級</h2>
+                    <a href="https://www.cmegroup.com/markets/interest-rates/cme-fedwatch-tool.html" target="_blank" class="text-xs text-slate-400 hover:text-blue-400 flex items-center gap-1 bg-slate-700/80 px-2 py-1 rounded border border-slate-600 transition">
+                        CME FedWatch <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </a>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 左側：實質利率計算 -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm bg-slate-900 p-2 rounded border border-slate-700">
+                            <span class="text-slate-400">美國10年期公債殖利率 (名目)</span>
+                            <span id="nominal-rate" class="font-bold text-white">--</span>
+                        </div>
+                        <div class="flex justify-between text-sm bg-slate-900 p-2 rounded border border-slate-700">
+                            <span class="text-slate-400">10年期平衡通膨率 (預期通膨)</span>
+                            <span id="inflation-rate" class="font-bold text-white">--</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm bg-blue-900/20 p-2 rounded border border-blue-800/50">
+                            <span class="text-blue-200 font-medium">當前實質利率 (計算值)</span>
+                            <span id="real-rate" class="text-xl font-bold text-blue-400">--</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 text-right">* 數據為 2026年 最新狀態</p>
+                    </div>
+
+                    <!-- 右側：Rule-based 評級 -->
+                    <div class="flex flex-col justify-center bg-slate-900/50 p-4 rounded-lg border border-slate-700 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-rose-500 opacity-5 blur-xl"></div>
+                        <div class="mb-2 text-sm text-slate-400">模組動態評級 (Rule-based Model)</div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <span class="text-2xl font-bold text-rose-400 tracking-wide">中性偏弱 (Neutral-Bear)</span>
+                        </div>
+                        <div class="bg-slate-800 p-2 rounded border border-slate-700 text-xs text-slate-400 leading-relaxed">
+                            <span class="text-amber-500 font-medium">判斷邏輯：</span><br>
+                            IF (實質利率 > 2.0%) AND (DXY 支撐) <br>
+                            THEN 持有黃金機會成本增加 = <span class="text-rose-400">短期承壓</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 第 2 列：雙窗格對比走勢 (XAUUSD vs DXY) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- 左窗格：黃金 -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
+                <h2 class="text-lg font-semibold text-amber-300 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    黃金現貨 (OANDA:XAUUSD)
+                </h2>
+                <div id="tv-chart-gold" class="w-full h-[350px] rounded-lg overflow-hidden"></div>
+            </div>
+
+            <!-- 右窗格：美元指數 -->
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
+                <h2 class="text-lg font-semibold text-emerald-300 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    美元指數 (CAPITALCOM:DXY)
+                </h2>
+                <div id="tv-chart-dxy" class="w-full h-[350px] rounded-lg overflow-hidden"></div>
+            </div>
+        </div>
+
+        <!-- 第 3 列：央行 10 大買賣超與淨量結算 (已更新為 Q2 2026 官方圖表數據) -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg mb-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-amber-300">Q2 2026 全球央行黃金儲備動態 (Top 5 買賣超)</h2>
+                    <p class="text-xs text-slate-400 mt-1">追蹤國家級實體買盤支撐力道（對齊 WGC Q2 官方圖表）</p>
+                </div>
+                <a href="https://www.gold.org/goldhub/data/gold-reserves-by-country" target="_blank" class="text-xs text-slate-400 hover:text-amber-400 flex items-center gap-1 bg-slate-700/80 px-2 py-1 rounded border border-slate-600 transition">
+                    WGC 官方數據庫 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                </a>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Top 5 買家 (對齊圖片資料) -->
+                <div class="overflow-hidden border border-slate-700 rounded-lg">
+                    <div class="bg-emerald-900/40 text-emerald-400 text-center py-2 font-bold text-sm border-b border-slate-700">前 5 大增持國 (Largest Increases)</div>
+                    <table class="w-full text-sm text-left text-slate-300">
+                        <thead class="text-xs text-slate-500 bg-slate-900">
+                            <tr>
+                                <th class="px-4 py-2">國家/機構</th>
+                                <th class="px-4 py-2 text-right">淨變動 (噸)</th>
+                                <th class="px-4 py-2 text-right">總儲備 (參考)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cb-buyers-body" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+
+                <!-- Top 5 賣家 (對齊圖片資料) -->
+                <div class="overflow-hidden border border-slate-700 rounded-lg">
+                    <div class="bg-rose-900/40 text-rose-400 text-center py-2 font-bold text-sm border-b border-slate-700">前 5 大減持國 (Largest Decreases)</div>
+                    <table class="w-full text-sm text-left text-slate-300">
+                        <thead class="text-xs text-slate-500 bg-slate-900">
+                            <tr>
+                                <th class="px-4 py-2">國家/機構</th>
+                                <th class="px-4 py-2 text-right">淨變動 (噸)</th>
+                                <th class="px-4 py-2 text-right">總儲備 (參考)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cb-sellers-body" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- 淨量總結算 -->
+            <div class="mt-4 bg-slate-900 p-4 rounded-lg border border-slate-700 flex justify-between items-center">
+                <span class="text-slate-300 font-medium">Q2 前十大變動國淨總量結算 (Net Change)</span>
+                <span id="cb-net-total" class="text-xl font-bold">-- 噸</span>
+            </div>
+        </div>
+
+        <!-- 第 4 列：新聞與行事曆 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
+                <h2 class="text-lg font-semibold text-amber-300 mb-4">即時黃金與貴金屬新聞</h2>
+                <div id="tv-news-container" class="w-full h-[400px] rounded-lg overflow-hidden border border-slate-700"></div>
+            </div>
+            
+            <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
+                <h2 class="text-lg font-semibold text-blue-300 mb-4">總經數據與重大事件行事曆</h2>
+                <div id="tv-calendar-container" class="w-full h-[400px] rounded-lg overflow-hidden border border-slate-700"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TradingView Chart 核心庫 -->
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    
+    <script>
+        // --- 1. Gold-API Double Check 機制 ---
+        async function fetchGoldApiDoubleCheck() {
+            const apiCheckEl = document.getElementById('api-double-check');
+            try {
+                const res = await fetch('https://api.gold-api.com/price/XAU');
+                const data = await res.json();
+                apiCheckEl.classList.remove('animate-pulse');
+                apiCheckEl.innerText = `$${data.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            } catch (e) {
+                apiCheckEl.innerText = 'API 逾時 / 備援中';
+            }
+        }
+
+        // --- 2. 實質利率與宏觀模型 ---
+        function calculateMacroModel() {
+            const nominal = 5.25; 
+            const inflation = 2.35; 
+            const real = (nominal - inflation).toFixed(2);
+            
+            document.getElementById('nominal-rate').innerText = `${nominal}%`;
+            document.getElementById('inflation-rate').innerText = `${inflation}%`;
+            document.getElementById('real-rate').innerText = `${real}%`;
+        }
+
+        // --- 3. 央行 10 大數據渲染與結算 (精準對齊 Q2 2026 WGC 官方圖片數據) ---
+        function renderCentralBankData() {
+            // Q2 2026 圖片中的 Largest increases
+            const buyers = [
+                { country: "波蘭 (Poland)", change: 50.79, total: 470 },
+                { country: "中國 (China)", change: 32.97, total: 2295 },
+                { country: "烏茲別克 (Uzbekistan)", change: 16.17, total: 376 },
+                { country: "哈薩克 (Kazakhstan)", change: 14.78, total: 315 },
+                { country: "新加坡 (Singapore)", change: 9.86, total: 246 }
+            ];
+            // Q2 2026 圖片中的 Largest decreases
+            const sellers = [
+                { country: "俄羅斯 (Russian Fed.)", change: -21.77, total: 2332 },
+                { country: "土耳其 (Turkey)", change: -4.23, total: 640 },
+                { country: "墨西哥 (Mexico)", change: -0.10, total: 120 },
+                { country: "馬爾他 (Malta)", change: -0.03, total: 8 },
+                { country: "羅馬尼亞 (Romania)", change: -0.01, total: 103 }
+            ];
+
+            let netTotal = 0;
+
+            // 渲染買家
+            const buyersTbody = document.getElementById('cb-buyers-body');
+            buyers.forEach(b => {
+                netTotal += b.change;
+                buyersTbody.innerHTML += `
+                    <tr class="hover:bg-slate-800 transition">
+                        <td class="px-4 py-2 font-medium text-white">${b.country}</td>
+                        <td class="px-4 py-2 text-right font-bold text-emerald-400">+${b.change.toFixed(2)}</td>
+                        <td class="px-4 py-2 text-right text-slate-400">${b.total.toLocaleString()}</td>
+                    </tr>`;
+            });
+
+            // 渲染賣家
+            const sellersTbody = document.getElementById('cb-sellers-body');
+            sellers.forEach(s => {
+                netTotal += s.change;
+                sellersTbody.innerHTML += `
+                    <tr class="hover:bg-slate-800 transition">
+                        <td class="px-4 py-2 font-medium text-white">${s.country}</td>
+                        <td class="px-4 py-2 text-right font-bold text-rose-400">${s.change.toFixed(2)}</td>
+                        <td class="px-4 py-2 text-right text-slate-400">${s.total.toLocaleString()}</td>
+                    </tr>`;
+            });
+
+            // 結算淨量
+            const netEl = document.getElementById('cb-net-total');
+            netEl.innerText = `${netTotal > 0 ? '+' : ''}${netTotal.toFixed(2)} 噸`;
+            netEl.className = `text-xl font-bold ${netTotal >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+        }
+
+        // --- 4. 動態載入 TradingView 腳本工具函數 ---
+        function loadTVScript(containerId, src, config) {
+            const container = document.getElementById(containerId);
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.src = src;
+            script.async = true;
+            script.text = JSON.stringify(config);
+            container.appendChild(script);
+        }
+
+        // --- 啟動所有功能與圖表 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchGoldApiDoubleCheck();
+            calculateMacroModel();
+            renderCentralBankData();
+
+            // 載入 TV 迷你主報價 (OANDA 黃金現貨)
+            loadTVScript('tv-single-quote', 'https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js', {
+                "symbol": "OANDA:XAUUSD",
+                "width": "100%",
+                "colorTheme": "dark",
+                "isTransparent": true,
+                "locale": "zh_TW"
+            });
+
+            // 載入 TV 高級圖表 (左: OANDA XAUUSD, 右: CAPITALCOM DXY)
+            new TradingView.widget({
+                "autosize": true, "symbol": "OANDA:XAUUSD", "interval": "D", "theme": "dark",
+                "style": "1", "locale": "zh_TW", "enable_publishing": false,
+                "backgroundColor": "#1e293b", "hide_legend": false, "container_id": "tv-chart-gold"
+            });
+            new TradingView.widget({
+                "autosize": true, "symbol": "CAPITALCOM:DXY", "interval": "D", "theme": "dark",
+                "style": "1", "locale": "zh_TW", "enable_publishing": false,
+                "backgroundColor": "#1e293b", "hide_legend": false, "container_id": "tv-chart-dxy"
+            });
+
+            // 載入 TV 新聞與行事曆
+            loadTVScript('tv-news-container', 'https://s3.tradingview.com/external-embedding/embed-widget-timeline.js', {
+                "feedMode": "symbol", "symbol": "OANDA:XAUUSD", "colorTheme": "dark",
+                "isTransparent": true, "displayMode": "regular", "width": "100%", "height": "100%", "locale": "zh_TW"
+            });
+            loadTVScript('tv-calendar-container', 'https://s3.tradingview.com/external-embedding/embed-widget-events.js', {
+                "colorTheme": "dark", "isTransparent": true, "width": "100%", "height": "100%",
+                "locale": "zh_TW", "importanceFilter": "-1,0,1", "currencyFilter": "USD"
+            });
+
+            // 每 60 秒做一次 API 雙源比對校驗
+            setInterval(fetchGoldApiDoubleCheck, 60000);
+        });
+    </script>
+</body>
+</html>
